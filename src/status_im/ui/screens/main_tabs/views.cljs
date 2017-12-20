@@ -54,8 +54,7 @@
     [react/view common.styles/flex
      [status-bar.view/status-bar {:type (if (= view-id :wallet) :wallet :main)}]
      [react/view common.styles/main-container
-      [(case view-id
-         :home home.views/home
-         :wallet wallet.views/wallet
-         :my-profile profile.views/my-profile)]
+      [react/wrap-comp home.views/home :home view-id]
+      [react/wrap-comp wallet.views/wallet :wallet view-id]
+      [react/wrap-comp profile.views/my-profile :my-profile view-id]
       [tabs view-id]]]))

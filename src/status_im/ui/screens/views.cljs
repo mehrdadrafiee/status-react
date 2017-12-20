@@ -2,7 +2,7 @@
   (:require-macros [status-im.utils.views :refer [defview letsubs]])
   (:require [re-frame.core :refer [dispatch]]
             [status-im.utils.platform :refer [android?]]
-            [status-im.ui.components.react :refer [view modal]]
+            [status-im.ui.components.react :refer [view modal] :as react]
             [status-im.ui.components.styles :as common-styles]
             [status-im.ui.screens.main-tabs.views :refer [main-tabs]]
             [status-im.ui.components.context-menu :refer [menu-context]]
@@ -67,13 +67,18 @@
             modal-view [:get :modal]]
     (when view-id
       (let [current-view (validate-current-view view-id signed-up?)]
-        (let [component (case current-view
-                          (:home :wallet :my-profile) main-tabs
+        (let [current-view' (case current-view
+                             (:home :wallet :my-profile)
+                             :main-tabs
+
+                             current-view)
+              component (case current-view'
+                          :main-tabs main-tabs
                           :wallet-send-transaction send-transaction
                           :wallet-transaction-sent transaction-sent
                           :choose-recipient choose-recipient
                           :wallet-request-transaction request-transaction
-                          (:transactions-history :unsigned-transactions) wallet-transactions/transactions
+                          :transactions wallet-transactions/transactions
                           :wallet-transaction-details wallet-transactions/transaction-details
                           :wallet-send-assets wallet.components/send-assets
                           :wallet-request-assets wallet.components/request-assets
@@ -107,10 +112,14 @@
                           :paste-json-text paste-json-text
                           :add-rpc-url add-rpc-url
                           :network-details network-details
-                          (throw (str "Unknown view: " current-view)))]
+                          (throw (str "Unknown view: " current-view')))]
           [(if android? menu-context view) common-styles/flex
            [view common-styles/flex
-            [component]
+            (if (and signed-up? (#{:main-tabs :chat} current-view'))
+              [view {:flex 1}
+               [react/wrap-comp main-tabs :main-tabs current-view']
+               [(if android? react/wrap-comp react/wrap-and-hide-comp) chat :chat current-view']]
+              [component])
             (when modal-view
               [view common-styles/modal
                [modal {:animation-type   :slide
