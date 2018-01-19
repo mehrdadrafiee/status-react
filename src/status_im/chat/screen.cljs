@@ -74,7 +74,7 @@
                                :current-public-key current-public-key)])
 
 
-(defview messages-view [chat-id group-chat]
+(defview messages-view [group-chat]
   (letsubs [messages           [:get-current-chat-messages]
             current-public-key [:get-current-public-key]
             opacity            (anim/create-value 0)

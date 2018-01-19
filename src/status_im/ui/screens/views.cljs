@@ -61,24 +61,58 @@
     current-view
     :chat))
 
+(defview recipient-and-sent []
+  (letsubs [view-id [:get :view-id]]
+    [view {:flex 1}
+     [react/with-activity-indicator
+      {:preview [react/view {}]}
+      [react/wrap-comp choose-recipient :choose-recipient view-id]]
+     [react/wrap-and-hide-comp transaction-sent :wallet-transaction-sent view-id]]))
+
+(defview transactions-and-other []
+  (letsubs [view-id [:get :view-id]]
+    [view {:flex 1}
+     [react/with-activity-indicator
+      {:preview [view {}]}
+      [react/wrap-comp
+       send-transaction
+       :wallet-send-transaction
+       view-id]]
+     [react/wrap-comp
+      recipient-and-sent
+      #{:choose-recipient :wallet-transaction-sent}
+      view-id]]))
+
+(defview wallet-related-stuff []
+  (letsubs [view-id [:get :view-id]]
+    [react/wrap-comp
+     transactions-and-other
+     #{:wallet-send-transaction :choose-recipient :wallet-transaction-sent}
+     view-id]))
+
+(defn wow [current-view]
+  (fn [current-view]
+    [view {:flex 1}
+     [react/wrap-comp main-tabs #{:home :wallet :my-profile} current-view]
+     [(if android? react/wrap-comp react/wrap-and-hide-comp) chat :chat current-view]
+     [react/wrap-and-hide-comp
+      wallet-related-stuff
+      #{:wallet :wallet-send-transaction :choose-recipient :wallet-transaction-sent}
+      current-view]]))
+
 (defview main []
   (letsubs [signed-up? [:signed-up?]
             view-id    [:get :view-id]
             modal-view [:get :modal]]
     (when view-id
       (let [current-view (validate-current-view view-id signed-up?)]
-        (let [current-view' (case current-view
-                             (:home :wallet :my-profile)
-                             :main-tabs
-
-                             current-view)
-              component (case current-view'
-                          :main-tabs main-tabs
+        (let [component (case current-view
+                          (:home :wallet :my-profile) main-tabs
                           :wallet-send-transaction send-transaction
                           :wallet-transaction-sent transaction-sent
                           :choose-recipient choose-recipient
                           :wallet-request-transaction request-transaction
-                          :transactions wallet-transactions/transactions
+                          (:transactions-history :unsigned-transactions) wallet-transactions/transactions
                           :wallet-transaction-details wallet-transactions/transaction-details
                           :wallet-send-assets wallet.components/send-assets
                           :wallet-request-assets wallet.components/request-assets
@@ -112,13 +146,14 @@
                           :paste-json-text paste-json-text
                           :add-rpc-url add-rpc-url
                           :network-details network-details
-                          (throw (str "Unknown view: " current-view')))]
+                          (throw (str "Unknown view: " current-view)))]
           [(if android? menu-context view) common-styles/flex
            [view common-styles/flex
-            (if (and signed-up? (#{:main-tabs :chat} current-view'))
-              [view {:flex 1}
-               [react/wrap-comp main-tabs :main-tabs current-view']
-               [(if android? react/wrap-comp react/wrap-and-hide-comp) chat :chat current-view']]
+            (if (and signed-up?
+                     (#{:home :wallet :my-profile :chat :wallet-send-transaction
+                        :choose-recipient :wallet-transaction-sent}
+                      current-view))
+              [wow current-view]
               [component])
             (when modal-view
               [view common-styles/modal

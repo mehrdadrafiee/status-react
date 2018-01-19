@@ -208,8 +208,9 @@
       comp)))
 
 (defn wrap-comp [comp v cv]
-  (let [st (if (= v cv) {:flex 1}
-                        {:opacity 0})]
+  (let [st (if (if (set? v) (v cv) (= v cv))
+             {:flex 1}
+             {:opacity 0})]
     [view st [comp]]))
 
 (defn wrap-and-hide-comp [comp v cv]

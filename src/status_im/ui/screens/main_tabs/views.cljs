@@ -54,7 +54,16 @@
     [react/view common.styles/flex
      [status-bar.view/status-bar {:type (if (= view-id :wallet) :wallet :main)}]
      [react/view common.styles/main-container
-      [react/wrap-comp home.views/home :home view-id]
-      [react/wrap-comp wallet.views/wallet :wallet view-id]
-      [react/wrap-comp profile.views/my-profile :my-profile view-id]
+      [react/with-activity-indicator
+       {:enabled? (= :home view-id)
+        :preview  [react/view {}]}
+       [react/wrap-comp home.views/home :home view-id]]
+      [react/with-activity-indicator
+       {:enabled? (= :wallet view-id)
+        :preview  [react/view {}]}
+       [react/wrap-comp wallet.views/wallet :wallet view-id]]
+      [react/with-activity-indicator
+       {:enabled? (= :my-profile view-id)
+        :preview  [react/view {}]}
+       [react/wrap-comp profile.views/my-profile :my-profile view-id]]
       [tabs view-id]]]))
